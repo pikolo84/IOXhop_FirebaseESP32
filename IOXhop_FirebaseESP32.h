@@ -47,6 +47,7 @@ class FirebaseESP32 {
 		void set(String path, String value) ;
 		void set(String path, bool value) ;
 		void set(String path, JsonVariant value) ;
+		void set(String path, JsonObject value) ;
 		
 		// Push
 		String pushInt(String path, int value) ;
@@ -58,6 +59,7 @@ class FirebaseESP32 {
 		String push(String path, String value) ;
 		String push(String path, bool value) ;
 		String push(String path, JsonVariant value) ;
+		String push(String path, JsonObject value) ;
 		
 		// Stream Event
 		void stream(String path, StreamHandlerCallback callback) ;

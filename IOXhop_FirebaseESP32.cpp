@@ -59,7 +59,10 @@ void FirebaseESP32::get(String path, bool &value) {
 }
 
 JsonVariant FirebaseESP32::get(String path) {
-	return StaticJsonBuffer<FIREBASE_JSON_VALUE_BUFFER_SIZE>().parseObject(_http(path, "GET"));
+	StaticJsonDocument<FIREBASE_JSON_VALUE_BUFFER_SIZE> jsonBuffer;
+	JsonVariant var = jsonBuffer.to<JsonVariant>();
+	var.set(_http(path, "GET"));
+	return var;
 }
 // END of get
 
@@ -90,7 +93,7 @@ void FirebaseESP32::set(String path, float value, int point) {
 
 void FirebaseESP32::set(String path, String value) {
 	String buf = "";
-	JsonVariant(value.c_str()).printTo(buf);
+	buf = value;
 	_http(path, "PUT", buf);
 }
 
@@ -100,8 +103,17 @@ void FirebaseESP32::set(String path, bool value) {
 
 void FirebaseESP32::set(String path, JsonVariant value) {
 	String bufferJson = "";
-	JsonObject& data = value;
-	data.printTo(bufferJson);
+	StaticJsonDocument<FIREBASE_JSON_VALUE_BUFFER_SIZE> jsonBuffer;
+	serializeJson(value, bufferJson);
+	// Serial.println(bufferJson);
+	_http(path, "PUT", bufferJson);
+}
+
+void FirebaseESP32::set(String path, JsonObject value) {
+	String bufferJson = "";
+	StaticJsonDocument<FIREBASE_JSON_VALUE_BUFFER_SIZE> jsonBuffer;
+	serializeJson(value, bufferJson);
+	// Serial.println(bufferJson);
 	_http(path, "PUT", bufferJson);
 }
 // END of set
@@ -133,7 +145,7 @@ String FirebaseESP32::push(String path, float value, int point) {
 
 String FirebaseESP32::push(String path, String value) {
 	String buf;
-	JsonVariant(value.c_str()).printTo(buf);
+	buf = value;
 	return _pushValue(path, buf);
 }
 
@@ -143,8 +155,15 @@ String FirebaseESP32::push(String path, bool value) {
 
 String FirebaseESP32::push(String path, JsonVariant value) {
 	String bufferJson = "";
-	JsonObject& data = value;
-	data.printTo(bufferJson);
+	StaticJsonDocument<FIREBASE_JSON_VALUE_BUFFER_SIZE> jsonBuffer;
+	serializeJson(value, bufferJson);
+	return _pushValue(path, bufferJson);
+}
+
+String FirebaseESP32::push(String path, JsonObject value) {
+	String bufferJson = "";
+	StaticJsonDocument<FIREBASE_JSON_VALUE_BUFFER_SIZE> jsonBuffer;
+	serializeJson(value, bufferJson);
 	return _pushValue(path, bufferJson);
 }
 
@@ -152,21 +171,21 @@ String FirebaseESP32::_pushValue(String path, String data) {
 	String rosJson = _http(path, "POST", data);
 	if (failed()) return String();
 	
-	StaticJsonBuffer<FIREBASE_RETUEN_JSON_BUFFER_SIZE> jsonBuffer;
-	JsonObject& root = jsonBuffer.parseObject(rosJson);
-	if (!root.success()) {
+	StaticJsonDocument<FIREBASE_RETUEN_JSON_BUFFER_SIZE> jsonBuffer;
+	auto error = deserializeJson(jsonBuffer, rosJson);
+	if (error) {
 		_errCode = 1;
 		_errMsg = "firebase not respond json formant, parseObject() failed";
 		return String();
 	}
 	
-	if (!root.containsKey("name")) {
+	if (!jsonBuffer.containsKey("name")) {
 		_errCode = 2;
 		_errMsg = "firebase not respond 'name' for object";
 		return String();
 	}
 	
-	return root["name"].as<String>();
+	return jsonBuffer["name"].as<String>();
 }
 // END of push
 

@@ -11,12 +11,12 @@ class FirebaseStream {
 	public:
 		FirebaseStream(String event, String data) {
 			_event = event;
-			StaticJsonBuffer<STREAM_JSON_BUFFER_SIZE> jsonBuffer;
-			JsonObject &root = jsonBuffer.parseObject(data);
-			if (root.success()) {
-				if (root.containsKey("path") && root.containsKey("data")) {
-					_path = root["path"].as<String>();
-					_data = root["data"].as<String>();
+			StaticJsonDocument<STREAM_JSON_BUFFER_SIZE> jsonBuffer;
+			auto error = deserializeJson(jsonBuffer, data);
+			if (!error) {
+				if (jsonBuffer.containsKey("path") && jsonBuffer.containsKey("data")) {
+					_path = jsonBuffer["path"].as<String>();
+					_data = jsonBuffer["data"].as<String>();
 				}
 			}
 		}
@@ -62,7 +62,9 @@ class FirebaseStream {
 		}
 		
 		JsonVariant getData() {
-			return StaticJsonBuffer<STREAM_JSON_DATA_BUFFER_SIZE>().parseObject(_data);
+			StaticJsonDocument<STREAM_JSON_DATA_BUFFER_SIZE> jsonBuffer;
+			deserializeJson(jsonBuffer, _data);
+			return jsonBuffer.as<JsonVariant>();
 		}
 		
 	private:
